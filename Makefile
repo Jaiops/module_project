@@ -1,5 +1,6 @@
 ifneq ($(KERNELRELEASE),)
 	obj-m := test.o
+	obj-m += lkm_writer.o
 else
 
 KERNELDIR ?= /lib/modules/$(shell uname -r)/build
