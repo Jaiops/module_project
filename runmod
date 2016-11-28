@@ -1,0 +1,7 @@
+#!/bin/bash
+
+make
+sudo rmmod test.ko
+sudo insmod test.ko
+strace echo "hello" > /proc/hello
+cat /proc/hello
