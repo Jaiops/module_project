@@ -1,12 +1,13 @@
-#include <hashtable.h>
-#include <stdio.h>
+#include "hashtable.h"
+
+#define MAX_PAYLOAD_SIZE 1000
 struct map_data{
 	uint8_t code;
 	uint8_t flag;
 	uint32_t key;
 
-	uint8_t data[1000];
-}
+	uint8_t data[0];
+};
 
 uint8_t  * hashtable_get(uint32_t key)
 {
@@ -14,44 +15,55 @@ uint8_t  * hashtable_get(uint32_t key)
 	m.code = 0;
 	m.key = key;
 
-	FILE *f = fopen("/proc/hashmap","wr");
-	if(f == NULL){
+	int fd = open("/proc/hashmap", O_APPEND);
+	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!" );
 	}
-	int err;
-	err = fputs((char * )m,f);
-	if(err == EOF){
+	ssize_t err;
+	err = write(fd, &m, sizeof(struct map_data));
+	if(err == -1){
+		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
 
 	}
-	fgets(&m.data,1000,f);
-	fclose(f);
-	return m.data;
+	uint8_t *returnData = calloc(MAX_PAYLOAD_SIZE, 1);
+	err = read(fd, returnData, MAX_PAYLOAD_SIZE);
+	if (err == -1) {
+		perror("read answer");
+	}
+	close(fd);
+	return returnData;
 }
 
-int hashtable_put(uint32_t key, uint8_t * value)
+int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize)
 {
-	struct map_data m;
-	m.code = 1;
-	m.key = key;
-	m.data = value;
+	if (dataSize > MAX_PAYLOAD_SIZE) {
+		fprintf(stderr, "Size of data bigger than allowed\n");
+	}
 
-	FILE *f = fopen("/proc/hashmap","wr");
-	if(f == NULL){
+	struct map_data *m = calloc(1, sizeof(struct map_data) + dataSize);
+	m->code = 1;
+	m->key = key;
+	memcpy(m->data, value, dataSize);
+
+	int fd = open("/proc/hashmap", O_RDWR);
+	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!" );
+		return -1;
 	}
-	int err;
-	err = fputs((char * )m,f);
-	if(err == EOF){
+	ssize_t err;
+	err = write(fd, m, sizeof(struct map_data) + dataSize);
+	if(err == -1){
+		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
+		return -1;
 	}
-	fgets(&m.data,1000,f);
-	fclose(f);
+	return 0;
 }
 
 int hashtable_remove(uint32_t key)
 {
-	struct map_data m;
+	/*struct map_data m;
 	m.code = 2;
 	m.key = key;
 
@@ -65,5 +77,6 @@ int hashtable_remove(uint32_t key)
 		printf("%s\n","Error when writing to hashmap file!" );
 	}
 	fgets(&m.data,1000,f);
-	fclose(f);
+	fclose(f);*/
+	return 0;
 }

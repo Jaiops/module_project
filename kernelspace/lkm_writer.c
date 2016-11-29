@@ -16,8 +16,9 @@ char *msg;
 DEFINE_HASHTABLE(map, 3);
 
 
-struct mystruct {
-	int data;
+struct stored {
+	void *data;
+	size_t dataSize;
 	struct hlist_node next ;
 };
 
@@ -57,18 +58,28 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
 	//Converts char* msg into a mdata struct
-	struct map_data  *mdata = (struct map_data * )msg;
+	struct map_data  *mdata = (struct map_data * )buf;
+	size_t dataSize = count -6;
 	int err;
-	char * tmp;
-	//Reads the mdata struct from user space
-	copy_from_user(msg,buf,count);
+	uint8_t * tmp;
+	struct stored *s;
+	printk("code: %u\n", mdata->code);
 	switch ( mdata->code ) 
 	{
 		case GET:
 			//TODO: Change msg into the value of the key
+			
 			break;
 		case PUT:
-			//TODO: Store data into the hashmap
+			printk("putting!\n");
+			tmp = kmalloc(dataSize, GFP_KERNEL);
+			copy_from_user(tmp,buf+6,dataSize);
+			
+			s = kmalloc(sizeof(struct stored), GFP_KERNEL);
+			s->data = tmp;
+			s->dataSize = dataSize;
+
+			hash_add(map, &s->next, mdata->key);
 			break;
 
 		case REMOVE:
@@ -90,8 +101,8 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 }
 
 struct file_operations proc_fops = {
-read: read_proc,
-      write: write_proc
+	read: read_proc,
+	write: write_proc
 };
 
 void create_new_proc_entry(void) 
@@ -109,7 +120,17 @@ int proc_init (void) {
 }
 
 void proc_cleanup(void) {
+	struct stored* current_node;
+	int bkt;
+	printk("CLEANING!!?!?!?!?!?!?\n");
 	remove_proc_entry("hashmap",NULL);
+
+	/*Free all entries in the hashtable*/
+	hash_for_each(map, bkt, current_node, next){
+		printk("key: %d\tbucket: %d\n", 1, bkt);
+		kfree(current_node->data);
+		kfree(current_node);
+	}
 	kfree(msg);
 }
 
