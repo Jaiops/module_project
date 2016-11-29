@@ -32,9 +32,16 @@ struct map_data{
 };
 
 
+/* 
+@filp 	pointer to the proc file
+@buf	pointer to the char buffer to read to
+@count 	number of bytes to copy
+@offp 	the long offset
 
+Copies msg into buf which is in the user space */
 ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp ) 
-{
+{	
+	//TODO: Stop returning the msg string and instead return the data in the hashmap
 	if(count>temp)
 	{
 		count=temp;
@@ -47,21 +54,26 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 	return count;
 }
 
+/* Reads mdata object from user space and does corresponding action depending on the mdata->code*/
 ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
-
+	//Converts char* msg into a mdata struct
 	struct map_data  *mdata = (struct map_data * )msg;
 	int err;
 	char * tmp;
+	//Reads the mdata struct from user space
 	copy_from_user(msg,buf,count);
 	switch ( mdata->code ) 
 	{
 		case GET:
+			//TODO: Return the value at key
 			break;
 		case PUT:
+			//TODO: Store data into the hashmap
 			break;
 
 		case REMOVE:
+			//TODO: Remove key:value pair
 			break;
 
 		default:
