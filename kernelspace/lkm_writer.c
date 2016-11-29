@@ -38,10 +38,9 @@ struct map_data{
 @count 	number of bytes to copy
 @offp 	the long offset
 
-Copies msg into buf which is in the user space */
+Returns msg which contains the value corresponding to the key which was written with the get command */
 ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp ) 
 {	
-	//TODO: Stop returning the msg string and instead return the data in the hashmap
 	if(count>temp)
 	{
 		count=temp;
@@ -66,7 +65,7 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	switch ( mdata->code ) 
 	{
 		case GET:
-			//TODO: Return the value at key
+			//TODO: Change msg into the value of the key
 			break;
 		case PUT:
 			//TODO: Store data into the hashmap
