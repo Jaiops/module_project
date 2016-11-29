@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
+#include <linux/hashtable.h>
 #include <asm/uaccess.h>
 #include <linux/slab.h>
 
@@ -12,9 +13,13 @@
 int len,temp;
 char * world = "world";
 char *msg;
+DEFINE_HASHTABLE(map, 3);
 
-hasmdata_t *map;
 
+struct mystruct {
+	int data;
+	struct hlist_node next ;
+};
 
 
 
@@ -24,7 +29,7 @@ struct map_data{
 	uint32_t key;
 
 	uint8_t data[];
-}
+};
 
 
 
@@ -44,31 +49,19 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 
 ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
-	
-	copy_from_user(msg,buf,count);
-	struct map_data  *mdata = (map_data * )msg;
+
+	struct map_data  *mdata = (struct map_data * )msg;
 	int err;
 	char * tmp;
+	copy_from_user(msg,buf,count);
 	switch ( mdata->code ) 
 	{
 		case GET:
-			tmp = hashmap_get(map,mdata->key);
-			if(tmp != NULL){
-				msg = tmp;
-				err = 0;
-			}
-			else{
-
-				err = 1;
-			}
 			break;
 		case PUT:
-			err = hashmap_put(map,mdata->key,mdata->flag, mdata->data);
 			break;
 
 		case REMOVE:
-			err = hashmap_put_remove(map,mdata->key);
-
 			break;
 
 		default:
@@ -78,7 +71,7 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 
 	}
 
-	
+
 	len=count;
 	temp=len;
 	return count;
@@ -86,8 +79,8 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 }
 
 struct file_operations proc_fops = {
-	read: read_proc,
-	write: write_proc
+read: read_proc,
+      write: write_proc
 };
 
 void create_new_proc_entry(void) 
@@ -100,12 +93,12 @@ void create_new_proc_entry(void)
 
 int proc_init (void) {
 	create_new_proc_entry();
+	hash_init(map);
 	return 0;
 }
 
 void proc_cleanup(void) {
 	remove_proc_entry("hashmap",NULL);
-	hasmdata_free(map);
 	kfree(msg);
 }
 
