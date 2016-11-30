@@ -17,6 +17,7 @@
 int len,temp;
 char * world = "world";
 char *msg;
+char *output;
 DEFINE_HASHTABLE(map, 3);
 
 
@@ -34,7 +35,7 @@ struct map_data{
 	uint8_t flag;
 	uint32_t key;
 
-	uint8_t data[];
+	uint8_t data[0];
 };
 
 
@@ -53,54 +54,98 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 		count=temp;
 	}
 	temp=temp-count;
-	copy_to_user(buf,msg, count);
+	copy_to_user(buf,output, count);
 	if(count==0)
 		temp=len;
 
+	output = NULL;
 	return count;
 }
 
 /* Reads mdata object from user space and does corresponding action depending on the mdata->code*/
 ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
+	printk(KERN_WARNING "In write_proc()\n");
+
 	//Converts char* msg into a mdata struct
-	struct map_data *mdata = (struct map_data*)buf;
+	copy_from_user(msg,buf,count);
+	struct map_data *mdata = (struct map_data*)msg;
+
+	printk(KERN_WARNING "Casted buf to map_data struct\n");
+
 	size_t data_size = count - MAP_DATA_OFFSET;
+
+	printk(KERN_WARNING "Declared data_size\n");
+
 	uint8_t *tmp;
 	struct hashmapEntry *entry = NULL;
 	struct hashmapEntry *current_entry;
-	printk("code: %u\n", mdata->code);
+
+	printk(KERN_WARNING "Declared tmp, entry and current_entry\n");
+
+	printk(KERN_WARNING "code: %u\n", mdata->code);
 	switch ( mdata->code ) 
 	{
 		case GET:
+			printk(KERN_WARNING "Inside switch GET\n");
+
 			hash_for_each_possible(map, current_entry, next, mdata->key){
 				if(current_entry->key == mdata->key)
 					entry = current_entry;
 			}
 			if(entry!=NULL){
-				msg = (char*)(entry->data);
+				printk(KERN_WARNING "entry != null\n");
+
+				output = (char*)(entry->data);
 				len = entry->data_size;
+				printk("output is :%d\n",*(uint8_t *)entry->data );
 				temp = len;
 			} else{
+				printk(KERN_WARNING "get found no matching key, returning 0\n");
+
 				// Value wasn't found return 0
 				return 0;
 			}
+			printk(KERN_WARNING "GET DONE\n");
+
 			break;
  
 		case PUT:
-			printk("putting!\n");
+			printk(KERN_WARNING "Inside switch PUT\n");
 			tmp = kmalloc(data_size, GFP_KERNEL);
-			copy_from_user(tmp,buf+MAP_DATA_OFFSET,data_size);
+			memcpy(tmp,mdata->data,data_size);
 			
 			entry = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
 			entry->data = tmp;
+			printk(KERN_WARNING "Value in put is %d\n",*(uint8_t *)entry->data );
 			entry->data_size = data_size;
 			entry->key = mdata->key;
 			hash_add(map, &entry->next, mdata->key);
+			printk(KERN_WARNING "PUT DONE\n");
+
 			break;
 
 		case REMOVE:
-			//TODO: Remove key:value pair
+			printk(KERN_WARNING "Ínside removed\n");
+
+			hash_for_each_possible(map, current_entry, next, mdata->key){
+				if(current_entry->key == mdata->key)
+					entry = current_entry;
+			}
+			if(entry!=NULL){
+				
+				printk(KERN_WARNING "entry removed\n");
+
+				hash_del(&entry->next);
+
+			} else{
+				printk(KERN_WARNING "remove found no matching key\n");
+
+				// Value wasn't found return 0
+				return 0;
+			}
+
+
 			break;
 
 		default:
@@ -136,7 +181,7 @@ int proc_init (void) {
 void proc_cleanup(void) {
 	struct hashmapEntry* current_entry;
 	int bkt;
-	printk("CLEANING!!?!?!?!?!?!?\n");
+	printk(KERN_WARNING "Inside proc_cleanup()\n");
 	remove_proc_entry("hashmap",NULL);
 
 	/*Free all entries in the hashtable*/
@@ -146,6 +191,8 @@ void proc_cleanup(void) {
 		kfree(current_entry);
 	}
 	kfree(msg);
+	printk(KERN_WARNING "proc_cleanup() done!\n");
+
 }
 
 MODULE_LICENSE("GPL"); 

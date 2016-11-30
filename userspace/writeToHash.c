@@ -40,7 +40,10 @@ void testPutOne(){
 	putval(1,5);
 	printf("%s\n","testPutOne succeded!" );
 }
-
+void testPutRemoveOne(){
+	putval(1,5);
+	removval(1);
+}
 void testPutGetOne(){
 	uint8_t * ret;
 	putval(1,5);
@@ -54,6 +57,7 @@ void testPutGetOne(){
 
 }
 void testNoObject(uint8_t key){
+	printf("%s\n","Testing testNoObject" );
 	uint8_t *ret;
 	ret = hashtable_get(key);
 	if(ret != NULL){
@@ -62,10 +66,12 @@ void testNoObject(uint8_t key){
 	}
 
 		printf("%s\n","testNoObject successful!" );	
+	printf("%s\n","testNoObject done" );
 
 }
 
 void testOneObject(){
+	printf("%s\n","testOneObject" );
 	uint8_t val = 10;
 	uint8_t * ret;
 	uint8_t key = 1;
@@ -79,6 +85,7 @@ void testOneObject(){
 	}
 
 	removval(key);
+
 	testNoObject(key);
 
 	printf("%s\n","testOneObject successful!" );	
@@ -136,15 +143,15 @@ void testTwoObject(){
 */
 int main() {
 	printf("%s\n","STARTED TESTING!" );
-	printf("%s\n","__TESTING testPutOne()" );
+	//printf("%s\n","__TESTING testPutOne()" );
 
 	//testPutOne();
 	//printf("%s\n","__testPutOne() DONE!" );
 	testOneObject();
 	//testPutGetOne();
-	printf("%s\n","__testPutGetOne() DONE!" );
+	//printf("%s\n","__testPutGetOne() DONE!" );
 
-
+	//testPutRemoveOne();
 	printf("%s\n","TESTING DONE!" );
 
 	//testOneObject();
