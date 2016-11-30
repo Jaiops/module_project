@@ -21,13 +21,12 @@ uint8_t  * hashtable_get(uint32_t key)
 	}
 	ssize_t err;
 	err = write(fd, &m, sizeof(struct map_data));
-	printf("%ld\n",err );
+
 	if(err == -1){
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
 
 	}else if(err == 0){
-		printf("%s\n","No value was found" );
 		return NULL;
 	}
 
@@ -83,6 +82,8 @@ int hashtable_remove(uint32_t key)
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
 		return -1;
+	}else if(err == 0){
+		return 1;
 	}
 
 	close(fd);

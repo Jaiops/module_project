@@ -4,14 +4,14 @@
 #define NULL ((void *)0)
 
 void fail(){
-	//printf("%s\n","Remove and reinsert the module to clear the table, please" );
+	printf("%s\n","The test suit failed, please remove the module and re-insert to clear possible data!" );
 	exit(1);
 }
 void putval(uint8_t key, uint8_t val){
 	int err; 
 	err = hashtable_put(key,&val,1); 
 	if(err == -1){ 
-		printf("%s\n","hashtable_put failed while putting to the hashtable" );
+		printf("%s\n","...hashtable_put failed while putting to the hashtable" );
 		fail(); 
 	} 
 }
@@ -21,7 +21,7 @@ uint8_t * getval(uint8_t key){
 	uint8_t *ret;
 	ret = hashtable_get(key);
 	if(ret == NULL){
-		printf("%s\n","error in getval, value does not exist!" );
+		printf("%s\n","...error in getval, value does not exist!" );
 		fail();
 	}
 	return ret;
@@ -31,47 +31,29 @@ void removval(uint8_t key){
 	int err;
 	err = hashtable_remove(key);
 	if(err == -1){
-		printf("%s\n","hashtable_remove failed while removing from the hashtable" );
+		printf("%s\n","...hashtable_remove failed while removing from the hashtable" );
 		fail();
 	}
 }
 
-void testPutOne(){
-	putval(1,5);
-	printf("%s\n","testPutOne succeded!" );
-}
 void testPutRemoveOne(){
 	putval(1,5);
 	removval(1);
+	printf("%s\n","...testPutRemoveOne successful!" );
 }
-void testPutGetOne(){
-	uint8_t * ret;
-	putval(1,5);
-	ret = getval(1);
-	if(ret[0] != 5){
-		printf("%s %d\n","testPutGetOne failed! was", ret[0] );
-	}else{
-		printf("%s\n","testPutGetOne succeded!" );
 
-	}
-
-}
 void testNoObject(uint8_t key){
-	printf("%s\n","Testing testNoObject" );
 	uint8_t *ret;
 	ret = hashtable_get(key);
 	if(ret != NULL){
-		printf("%s\n","testNoObject failed while getting value from the hashtable" );
+		printf("%s\n","...testNoObject failed while getting value from the hashtable" );
 		fail();
 	}
 
-		printf("%s\n","testNoObject successful!" );	
-	printf("%s\n","testNoObject done" );
-
+	printf("%s\n","...testNoObject successful!" );	
 }
 
 void testOneObject(){
-	printf("%s\n","testOneObject" );
 	uint8_t val = 10;
 	uint8_t * ret;
 	uint8_t key = 1;
@@ -80,7 +62,7 @@ void testOneObject(){
 	ret = getval(key);
 
 	if(val != ret[0]){
-		printf("%s%d%s%d\n","testOneObject failed while getting value from the hashtable, was ", ret[0]," should be ",val );
+		printf("%s%d%s%d\n","...testOneObject failed while getting value from the hashtable, was ", ret[0]," should be ",val );
 		fail();
 	}
 
@@ -88,74 +70,99 @@ void testOneObject(){
 
 	testNoObject(key);
 
-	printf("%s\n","testOneObject successful!" );	
+	printf("%s\n","...testOneObject successful!" );	
 }
 
-
-/*
-void testPutRemoveOneObject(){
-	uint8_t val = 10;
-	uint8_t * ret;
-	int err;
-	err = hashtable_put(1,&val,1);
-	if(err == -1){
-		printf("%s\n","testOneObject failed while putting to the hashtable" );
-		fail();
-	}
-	ret = hashtable_get(1);
-	if(val != ret[0]){
-		printf("%s\n","testOneObject failed while getting value from the hashtable, was %d should be %d",ret[0],val );
-		fail();
-	}
-	err = hashtable_remove(1);
-	if(err == -1){
-		printf("%s\n","testOneObject failed while removing from the hashtable" );
-		fail();
-	}
-
-	ret = hashtable_get(1);
-	if(ret[0] != 0){
-		printf("%s\n","testNoObject failed while getting value from the hashtable, should be 0 is %d",ret[0] );
-		fail();
-	}
-}
-void testTwoObject(){
+void testTwoObjects(){
 	uint8_t val = 10;
 	uint8_t val2 = 15;
 	uint8_t * ret;
-	int err;
-	err = hashtable_put(1,&val,1);
-	if(err == -1){
-		printf("%s\n","testOneObject failed while putting to the hashtable" );
+	uint8_t * ret2;
+
+
+	putval(1,val);
+	putval(2,val2);
+
+	ret = getval(1);
+	ret2 = getval(2);
+
+	if(ret[0] != val){
+		printf("%s %d %s %d\n","...testTwoObject failed. Was",ret[0],"expected",val );
 		fail();
 	}
-	ret = hashtable_get(1);
-	if(val != ret[0]){
-		printf("%s\n","testOneObject failed while getting value from the hashtable, was %d should be %d",ret[0],val );
+	if(ret2[0] != val2){
+		printf("%s %d %s %d\n","...testTwoObject failed. Was",ret2[0],"expected",val );
 		fail();
 	}
-	err = hashtable_remove(1);
-	if(err == -1){
-		printf("%s\n","testOneObject failed while removing from the hashtable" );
-		fail();
-	}
+
+	removval(1);
+	removval(2);
+
+	printf("%s\n","...tesTwoObjects successful!" );	
+
 }
-*/
+
+void testSeveralGetCalls(){
+	int count = 10;
+	for (int i = 0; i < count; ++i)
+	{
+		putval(i+1, i+2);
+	}
+
+	uint8_t * ret;
+
+	for (int i = 0; i < count; ++i)
+	{
+		ret = getval(i+1);
+		if(ret[0] != i+2){
+			printf("%s %d %s %d\n","...testSeveralGetCalls failed. Was",ret[0],"expected",i+2 );
+			fail();
+		}
+	}
+	for (int i = 0; i < count; ++i)
+	{
+		removval(i+1);
+	}
+	printf("%s\n","..testSeveralGetCalls successful!" );
+
+}
+
+void removeNonExisting(){
+	int err;
+	err = hashtable_remove(1);
+
+	if(err!=1){
+		printf("%s\n","...removeNonExisting actually removed something!" );
+		fail();
+	}
+
+	printf("%s\n","...removeNonExisting successful!" );
+}
+
 int main() {
 	printf("%s\n","STARTED TESTING!" );
-	//printf("%s\n","__TESTING testPutOne()" );
 
-	//testPutOne();
-	//printf("%s\n","__testPutOne() DONE!" );
+	printf("\n%s\n","TESTING testNoObject:" );
+	testNoObject(1);
+
+	printf("\n%s\n","TESTING removeNonExisting:" );
+	removeNonExisting();
+
+	printf("\n%s\n","TESTING testPutRemoveOne:" );
+	testPutRemoveOne();
+
+	printf("\n%s\n","TESTING testOneObject:" );
 	testOneObject();
-	//testPutGetOne();
-	//printf("%s\n","__testPutGetOne() DONE!" );
 
-	//testPutRemoveOne();
-	printf("%s\n","TESTING DONE!" );
+	printf("\n%s\n","TESTING testTwoObjects:" );
+	testTwoObjects();
 
-	//testOneObject();
-	//testNoObject();
+	printf("\n%s\n","TESTING testSeveralGetCalls:" );
+	testSeveralGetCalls();
+
+
+	printf("\n%s\n","TESTING DONE!" );
+
 	return 0;
 }
 
