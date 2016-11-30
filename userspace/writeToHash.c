@@ -127,7 +127,7 @@ void testSeveralGetCalls(){
 
 }
 
-void removeNonExisting(){
+void testRemoveNonExisting(){
 	int err;
 	err = hashtable_remove(1);
 
@@ -139,14 +139,50 @@ void removeNonExisting(){
 	printf("%s\n","...removeNonExisting successful!" );
 }
 
+
+void testOverwriteValue(){
+	uint8_t * ret;
+	uint8_t * ret2;
+	uint8_t * ret3;
+
+	putval(2,10);
+	ret = getval(2);
+
+	if(10 != ret[0]){
+		printf("%s%d%s%d\n","...testOneObject failed while getting value from the hashtable, was ", ret[0]," should be ",10 );
+		fail();
+	}
+
+	putval(2,15);
+	ret2 = getval(2);
+
+	if(15 != ret2[0]){
+		printf("%s%d%s%d\n","...testOneObject failed while getting value from the hashtable, was ", ret[0]," should be ",15 );
+		fail();
+	}
+
+	removval(2);
+	ret3 = getval(2);
+
+	if(10 != ret3[0]){
+		printf("%s%d%s%d\n","...testOneObject failed while getting value from the hashtable, was ", ret[0]," should be ",10 );
+		fail();
+	}
+
+	removval(2);
+
+	printf("%s\n","...overwriteValue() successful" );
+}
+
 int main() {
 	printf("%s\n","STARTED TESTING!" );
+
 
 	printf("\n%s\n","TESTING testNoObject:" );
 	testNoObject(1);
 
-	printf("\n%s\n","TESTING removeNonExisting:" );
-	removeNonExisting();
+	printf("\n%s\n","TESTING testRemoveNonExisting:" );
+	testRemoveNonExisting();
 
 	printf("\n%s\n","TESTING testPutRemoveOne:" );
 	testPutRemoveOne();
@@ -159,6 +195,10 @@ int main() {
 
 	printf("\n%s\n","TESTING testSeveralGetCalls:" );
 	testSeveralGetCalls();
+
+	printf("\n%s\n","TESTING testOverwriteValue:" );
+
+	testOverwriteValue();
 
 
 	printf("\n%s\n","TESTING DONE!" );
