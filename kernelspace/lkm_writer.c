@@ -20,8 +20,7 @@ DEFINE_HASHTABLE(map, 3);
  * @count 	number of bytes to copy
  * @offp 	the long offset
  * 
- * Returns msg which contains the value corresponding to the key which was 
- * written with the get command 
+ * Writes the value of output buffer into the proc file. 
  */
 ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp ) 
 {	
@@ -38,6 +37,10 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 	return count;
 }
 
+/**
+ * @key the key for the value in the map
+ * Searches the hashmap, returns value if found, otherwise null
+ */
 struct hashmapEntry *get_entry(uint32_t key) 
 {
 	struct hashmapEntry *current_entry;
@@ -49,6 +52,10 @@ struct hashmapEntry *get_entry(uint32_t key)
 
 }
 
+/**
+ * @mdata struct read from the userspace from procfile
+ * Copies the data in the hashmap_entry into the output buffer
+ */
 int get(struct map_data *mdata) 
 {
 	struct hashmapEntry *entry = get_entry(mdata->key);
@@ -66,6 +73,11 @@ int get(struct map_data *mdata)
 	return 0; //success
 }
 
+/**
+ * @mdata struct read from userspace via procfile
+ * @data_size the size of the data to be stored in hashmap
+ * Copies the users key+value pair into the hashmap
+ */
 void put(struct map_data *mdata, size_t data_size) 
 {
 	/*Copy of "value" into memory*/
@@ -148,6 +160,9 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	//Error handling? Do we have to return count or can we return an error number?
 }
 
+/**
+ * Creates new proc file with name hashmap
+ */
 void create_new_proc_entry(void) 
 {
 	proc_create("hashmap",0666,NULL,&proc_fops);
@@ -155,7 +170,9 @@ void create_new_proc_entry(void)
 
 }
 
-
+/**
+ * Inits hashmap and procfile
+ */
 int proc_init (void) 
 {
 	create_new_proc_entry();
@@ -163,6 +180,9 @@ int proc_init (void)
 	return 0;
 }
 
+/**
+ * Removes the proc file and frees the hashmap
+ */
 void proc_cleanup(void) 
 {
 	struct hashmapEntry* current_entry;
