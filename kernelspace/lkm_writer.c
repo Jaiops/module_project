@@ -10,7 +10,8 @@
 #define MAP_DATA_OFFSET 6
 #define MAX_DATA_LENN 1000
 
-// Defines what the "code" variable mean regarding which hashmap interface function should be used
+/* Defines what the "code" variable mean regarding which hashmap interface 
+ * function should be used */
 #define GET 0
 #define PUT 1
 #define REMOVE 2
@@ -45,7 +46,8 @@ struct map_data{
  * @count 	number of bytes to copy
  * @offp 	the long offset
  * 
- *Returns msg which contains the value corresponding to the key which was written with the get command 
+ * Returns msg which contains the value corresponding to the key which was 
+ * written with the get command 
  */
 ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp ) 
 {	
@@ -62,7 +64,8 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 	return count;
 }
 
-/* Reads mdata object from user space and does corresponding action depending on the mdata->code*/
+/* Reads mdata object from user space and does corresponding action depending 
+ * on the mdata->code*/
 ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 {
 	printk(KERN_WARNING "In write_proc()\n");
