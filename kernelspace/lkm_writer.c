@@ -82,7 +82,6 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 
 	uint8_t *tmp;
 	struct hashmapEntry *entry = NULL;
-	struct hashmapEntry *current_entry;
 
 	printk(KERN_WARNING "Declared tmp, entry and current_entry\n");
 
@@ -90,29 +89,17 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	switch ( mdata->code ) 
 	{
 		case GET:
+			/*if no entry return 0
+			  else return size of data in entry */
 			printk(KERN_WARNING "Inside switch GET\n");
-
-			hash_for_each_possible(map, current_entry, next, mdata->key){
-				if(current_entry->key == mdata->key)
-					entry = current_entry;
-			}
-			if(entry!=NULL){
-				printk(KERN_WARNING "entry != null\n");
-
-				output = (char*)(entry->data);
-				len = entry->data_size;
-				printk("output is :%d\n",*(uint8_t *)entry->data );
-				temp = len;
-			} else{
-				printk(KERN_WARNING "get found no matching key, returning 0\n");
-
-				// Value wasn't found return 0
+			if (get(mdata) == -1)
 				return 0;
-			}
+			else
+				return len;
 			printk(KERN_WARNING "GET DONE\n");
 
 			break;
- 
+
 		case PUT:
 			printk(KERN_WARNING "Inside switch PUT\n");
 			tmp = kmalloc(data_size, GFP_KERNEL);
@@ -131,10 +118,7 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 		case REMOVE:
 			printk(KERN_WARNING "Ínside removed\n");
 
-			hash_for_each_possible(map, current_entry, next, mdata->key){
-				if(current_entry->key == mdata->key)
-					entry = current_entry;
-			}
+			entry = get_entry(mdata->key);
 			if(entry!=NULL){
 				
 				printk(KERN_WARNING "entry removed\n");
@@ -198,6 +182,31 @@ void proc_cleanup(void) {
 
 }
 
+struct hashmapEntry *get_entry(uint32_t key) {
+	struct hashmapEntry *current_entry;
+	hash_for_each_possible(map, current_entry, next, key){
+		if(current_entry->key == key)
+			return current_entry;
+	}
+	return NULL;
+
+}
+
+int get(struct map_data mdata) {
+	entry = get_entry(mdata->key);
+	if(entry!=NULL){
+		printk(KERN_WARNING "entry != null\n");
+
+		output = (char*)(entry->data);
+		len = entry->data_size;
+		printk("output is :%d\n",*(uint8_t *)entry->data );
+		temp = len;
+	} else{
+		printk(KERN_WARNING "get found no matching key, returning 0\n");
+		return -1; //missing entry
+	}
+	return 0; //success
+}
 MODULE_LICENSE("GPL"); 
 module_init(proc_init);
 module_exit(proc_cleanup);
