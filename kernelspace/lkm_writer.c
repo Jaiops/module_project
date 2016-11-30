@@ -64,6 +64,47 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 	return count;
 }
 
+struct hashmapEntry *get_entry(uint32_t key) {
+	struct hashmapEntry *current_entry;
+	hash_for_each_possible(map, current_entry, next, key){
+		if(current_entry->key == key)
+			return current_entry;
+	}
+	return NULL;
+
+}
+
+int get(struct map_data *mdata) {
+	struct hashmapEntry *entry = get_entry(mdata->key);
+	if(entry!=NULL){
+		printk(KERN_WARNING "entry != null\n");
+
+		output = (char*)(entry->data);
+		len = entry->data_size;
+		printk("output is :%d\n",*(uint8_t *)entry->data );
+		temp = len;
+	} else{
+		printk(KERN_WARNING "get found no matching key, returning 0\n");
+		return -1; //missing entry
+	}
+	return 0; //success
+}
+
+void put(struct map_data *mdata, size_t data_size) {
+	/*Copy of "value" into memory*/
+	struct hashmapEntry *entry;
+	void *entryData = kmalloc(data_size, GFP_KERNEL);
+	memcpy(entryData, mdata->data, data_size);
+
+	entry = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
+	entry->data = entryData;
+	printk(KERN_WARNING "Value in put is %d\n",*(uint8_t *)entry->data );
+	entry->data_size = data_size;
+	entry->key = mdata->key;
+	hash_add(map, &entry->next, mdata->key);
+
+}
+
 /* Reads mdata object from user space and does corresponding action depending 
  * on the mdata->code*/
 ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
@@ -80,7 +121,6 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 
 	printk(KERN_WARNING "Declared data_size\n");
 
-	uint8_t *tmp;
 	struct hashmapEntry *entry = NULL;
 
 	printk(KERN_WARNING "Declared tmp, entry and current_entry\n");
@@ -102,15 +142,9 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 
 		case PUT:
 			printk(KERN_WARNING "Inside switch PUT\n");
-			tmp = kmalloc(data_size, GFP_KERNEL);
-			memcpy(tmp,mdata->data,data_size);
-			
-			entry = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
-			entry->data = tmp;
-			printk(KERN_WARNING "Value in put is %d\n",*(uint8_t *)entry->data );
-			entry->data_size = data_size;
-			entry->key = mdata->key;
-			hash_add(map, &entry->next, mdata->key);
+
+			put(mdata, data_size);
+
 			printk(KERN_WARNING "PUT DONE\n");
 
 			break;
@@ -182,31 +216,7 @@ void proc_cleanup(void) {
 
 }
 
-struct hashmapEntry *get_entry(uint32_t key) {
-	struct hashmapEntry *current_entry;
-	hash_for_each_possible(map, current_entry, next, key){
-		if(current_entry->key == key)
-			return current_entry;
-	}
-	return NULL;
 
-}
-
-int get(struct map_data mdata) {
-	entry = get_entry(mdata->key);
-	if(entry!=NULL){
-		printk(KERN_WARNING "entry != null\n");
-
-		output = (char*)(entry->data);
-		len = entry->data_size;
-		printk("output is :%d\n",*(uint8_t *)entry->data );
-		temp = len;
-	} else{
-		printk(KERN_WARNING "get found no matching key, returning 0\n");
-		return -1; //missing entry
-	}
-	return 0; //success
-}
 MODULE_LICENSE("GPL"); 
 module_init(proc_init);
 module_exit(proc_cleanup);
