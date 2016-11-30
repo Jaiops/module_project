@@ -130,19 +130,10 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 			printk(KERN_WARNING "Ínside removed\n");
 
 			entry = get_entry(mdata->key);
-			if(entry!=NULL){
-				
-				printk(KERN_WARNING "entry removed\n");
-
+			if(entry!=NULL)
 				hash_del(&entry->next);
-
-			} else{
-				printk(KERN_WARNING "remove found no matching key\n");
-
-				// Value wasn't found return 0
-				return 0;
-			}
-
+			else
+				return 0; //value not found
 
 			break;
 
