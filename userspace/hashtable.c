@@ -15,17 +15,22 @@ uint8_t  * hashtable_get(uint32_t key)
 	m.code = 0;
 	m.key = key;
 
-	int fd = open("/proc/hashmap", O_APPEND);
+	int fd = open("/proc/hashmap", O_RDWR);
 	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!" );
 	}
 	ssize_t err;
 	err = write(fd, &m, sizeof(struct map_data));
+	printf("%ld\n",err );
 	if(err == -1){
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
 
+	}else if(err == 0){
+		printf("%s\n","No value was found" );
+		return NULL;
 	}
+
 	uint8_t *returnData = calloc(MAX_PAYLOAD_SIZE, 1);
 	err = read(fd, returnData, MAX_PAYLOAD_SIZE);
 	if (err == -1) {
@@ -63,20 +68,23 @@ int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize)
 
 int hashtable_remove(uint32_t key)
 {
-	/*struct map_data m;
-	m.code = 2;
-	m.key = key;
+	struct map_data *m = calloc(1, sizeof(struct map_data));
+	m->code = 2;
+	m->key = key;
 
-	FILE *f = fopen("/proc/hashmap","wr");
-	if(f == NULL){
+	int fd = open("/proc/hashmap", O_RDWR);
+	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!" );
+		return -1;
 	}
-	int err;
-	err = fputs((char * )m,f);
-	if(err == EOF){
+	ssize_t err;
+	err = write(fd, m, sizeof(struct map_data));
+	if(err == -1){
+		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
+		return -1;
 	}
-	fgets(&m.data,1000,f);
-	fclose(f);*/
+
+	close(fd);
 	return 0;
 }
