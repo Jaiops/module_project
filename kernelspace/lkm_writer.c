@@ -1,20 +1,10 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/proc_fs.h>
-#include <linux/sched.h>
-#include <linux/hashtable.h>
-#include <asm/uaccess.h>
-#include <linux/slab.h>
+#include "lkm_writer.h"
 
-// number of bytes in the mapdata struct before the data array
-#define MAP_DATA_OFFSET 6
-#define MAX_DATA_LENN 1000
+struct file_operations proc_fops = {
+	read: read_proc,
+	write: write_proc
+};
 
-/* Defines what the "code" variable mean regarding which hashmap interface 
- * function should be used */
-#define GET 0
-#define PUT 1
-#define REMOVE 2
 int len,temp;
 char * world = "world";
 char *msg;
@@ -22,22 +12,6 @@ char *output;
 DEFINE_HASHTABLE(map, 3);
 
 
-struct hashmapEntry {
-	void *data;
-	uint32_t key;
-	size_t data_size;
-	struct hlist_node next ;
-};
-
-
-
-struct map_data{
-	uint8_t code;
-	uint8_t flag;
-	uint32_t key;
-
-	uint8_t data[0];
-};
 
 
 /** 
@@ -64,7 +38,8 @@ ssize_t read_proc(struct file *filp,char *buf,size_t count,loff_t *offp )
 	return count;
 }
 
-struct hashmapEntry *get_entry(uint32_t key) {
+struct hashmapEntry *get_entry(uint32_t key) 
+{
 	struct hashmapEntry *current_entry;
 	hash_for_each_possible(map, current_entry, next, key){
 		if(current_entry->key == key)
@@ -74,7 +49,8 @@ struct hashmapEntry *get_entry(uint32_t key) {
 
 }
 
-int get(struct map_data *mdata) {
+int get(struct map_data *mdata) 
+{
 	struct hashmapEntry *entry = get_entry(mdata->key);
 	if(entry!=NULL){
 		printk(KERN_WARNING "entry != null\n");
@@ -90,7 +66,8 @@ int get(struct map_data *mdata) {
 	return 0; //success
 }
 
-void put(struct map_data *mdata, size_t data_size) {
+void put(struct map_data *mdata, size_t data_size) 
+{
 	/*Copy of "value" into memory*/
 	struct hashmapEntry *entry;
 	void *entryData = kmalloc(data_size, GFP_KERNEL);
@@ -180,11 +157,6 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	//Error handling? Do we have to return count or can we return an error number?
 }
 
-struct file_operations proc_fops = {
-	read: read_proc,
-	write: write_proc
-};
-
 void create_new_proc_entry(void) 
 {
 	proc_create("hashmap",0666,NULL,&proc_fops);
@@ -193,13 +165,15 @@ void create_new_proc_entry(void)
 }
 
 
-int proc_init (void) {
+int proc_init (void) 
+{
 	create_new_proc_entry();
 	hash_init(map);
 	return 0;
 }
 
-void proc_cleanup(void) {
+void proc_cleanup(void) 
+{
 	struct hashmapEntry* current_entry;
 	int bkt;
 	printk(KERN_WARNING "Inside proc_cleanup()\n");
