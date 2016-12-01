@@ -1,5 +1,4 @@
 ifneq ($(KERNELRELEASE),)
-	obj-m := test.o
 	obj-m += lkm_writer.o
 else
 
