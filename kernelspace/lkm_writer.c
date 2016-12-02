@@ -1,5 +1,7 @@
 #include "lkm_writer.h"
 
+void clear_hashmap(void);
+
 struct file_operations proc_fops = {
 	read: read_proc,
 	write: write_proc
@@ -9,7 +11,7 @@ int len,temp;
 char * world = "world";
 char *msg;
 char *output;
-DEFINE_HASHTABLE(map, 3);
+DEFINE_HASHTABLE(map, 16);
 
 
 
@@ -208,8 +210,7 @@ int proc_init (void)
  */
 void proc_cleanup(void) 
 {
-	struct hashmapEntry* current_entry;
-	int bkt;
+	
 	printk(KERN_WARNING "Inside proc_cleanup()\n");
 	remove_proc_entry("hashmap",NULL);
 
