@@ -152,7 +152,7 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 			break;
 
 		case CLEAR:
-			
+			clear_hashmap();	
 
 			break;
 		default:
@@ -165,6 +165,23 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	return count;
 	//Error handling? Do we have to return count or can we return an error number?
 }
+
+/**
+ * Removes all entries in the hashmap without removing the hashmap itself.
+ */
+void clear_hashmap()
+{
+	struct hashmapEntry* current_entry;
+	int bkt;
+	hash_for_each(map, bkt, current_entry, next){
+		printk("key: %d\tbucket: %d\n", 1, bkt);
+		hash_del(&current_entry->next);
+		kfree(current_entry->data);
+		kfree(current_entry);
+	}
+
+}
+
 
 /**
  * Creates new proc file with name hashmap
@@ -197,12 +214,7 @@ void proc_cleanup(void)
 	remove_proc_entry("hashmap",NULL);
 
 	/*Free all entries in the hashtable*/
-	hash_for_each(map, bkt, current_entry, next){
-		printk("key: %d\tbucket: %d\n", 1, bkt);
-		hash_del(&current_entry->next);
-		kfree(current_entry->data);
-		kfree(current_entry);
-	}
+	clear_hashmap();
 	kfree(msg);
 	printk(KERN_WARNING "proc_cleanup() done!\n");
 }
