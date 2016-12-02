@@ -3,7 +3,6 @@
 #define MAX_PAYLOAD_SIZE 1000
 struct map_data{
 	uint8_t code;
-	uint8_t flag;
 	uint32_t key;
 
 	uint8_t data[0];

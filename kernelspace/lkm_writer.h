@@ -8,7 +8,7 @@
 #include <linux/slab.h>
 
 // number of bytes in the mapdata struct before the data array
-#define MAP_DATA_OFFSET 6
+#define MAP_DATA_OFFSET 5
 #define MAX_DATA_LENN 1000
 
 /* Defines what the "code" variable mean regarding which hashmap interface 
@@ -29,7 +29,6 @@ struct hashmapEntry {
 
 struct map_data{
 	uint8_t code;
-	uint8_t flag;
 	uint32_t key;
 
 	uint8_t data[0];
