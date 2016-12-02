@@ -1,7 +1,9 @@
 #include "hashtable.h"
 #include <linux/types.h>
+#include <pthread.h>
+//#define NULL ((void *)0)
+void * threadWork(void * p);
 
-#define NULL ((void *)0)
 
 void fail(){
 	printf("%s\n","The test suit failed, please remove the module and re-insert to clear possible data!" );
@@ -174,6 +176,75 @@ void testOverwriteValue(){
 	printf("%s\n","...overwriteValue() successful" );
 }
 
+int valuesPerThread = 200;
+
+void testThreadedGet(int nrThreads){
+	pthread_t threads[nrThreads];
+	int count = valuesPerThread*nrThreads;
+	void *retVal[nrThreads];
+	for (int i = 0; i < count; ++i)
+	{
+		putval(i,i);
+
+	}
+	for (int i = 0; i < nrThreads; ++i)
+	{
+		int * j = malloc(sizeof(*j));
+		*j = (i*valuesPerThread);	
+		if(pthread_create(&threads[i],0,threadWork,(void *)j)){
+			perror("...Thread create failure");
+		}
+	}
+
+	for (int i = 0; i < nrThreads; ++i)
+	{
+		
+		if(pthread_join(threads[i], &retVal[i] )){
+			perror("...Thread join failure");
+		}
+	}
+
+	for (int i = 0; i < count; ++i)
+	{
+		removval(i);
+
+	}
+	for (int i = 0; i < nrThreads; ++i)
+	{
+		if((int*)retVal != 0){
+			printf("%s%d%s\n","...testThreadedGet, thread: ",i," failed" );
+		}
+	}
+
+
+}
+void * threadWork(void * p){
+	int start = *(int *)p;
+	free(p);
+	int end = start+valuesPerThread;
+
+	int *error = malloc(sizeof(int));
+	*error = 0;
+	uint8_t *ret[end-start];
+
+	for(int i = start;i<end;i++){
+
+		ret[i-start] = getval(i);
+	}
+
+
+	for(int i = 0;i<end-start;i++){
+
+		if(*ret[i] != start+i){
+			printf("%s%d%s%d\n","....Wrong value found, was: ",*ret[i]," expected: " ,start+i );
+			*error = 1;
+		}
+	}
+
+
+	return error;
+}
+
 int main() {
 	printf("%s\n","STARTED TESTING!" );
 
@@ -199,6 +270,11 @@ int main() {
 	printf("\n%s\n","TESTING testOverwriteValue:" );
 
 	testOverwriteValue();
+
+	int threads = 4;
+	printf("\n%s%d%s\n","TESTING testThreadedGet with ",threads, " threads:" );
+
+	testThreadedGet(4);
 
 
 	printf("\n%s\n","TESTING DONE!" );
