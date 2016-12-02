@@ -116,3 +116,34 @@ int hashtable_remove(uint32_t key)
 
 	return 0;
 }
+
+/**
+ * userspace call to clear all entries in the hashmap.
+ */
+int hashtable_clear()
+{
+	struct map_data *m = calloc(1, sizeof(struct map_data));
+	m->code = 3;
+	
+	int fd = open("/proc/hashmap", 0_RDWR);
+	if(fd == -1){
+		printf("%s\n","Error, can't open the hashmap file!");
+	}
+	
+	ssize_t err;
+	
+	flock(fd, LOCK_EX);
+
+	err = write(fd, m, sizeof(struct map_data));
+
+	flock(fd, LOCK_UN);
+	close(fd);
+
+	return 0;
+}
+
+
+
+
+
+

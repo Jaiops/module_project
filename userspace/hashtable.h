@@ -44,3 +44,8 @@ int hashtable_put(uint32_t key, void * value, size_t dataSize);
  * return: 0 on succes, 1 on value not found, -1 on error.
  */
 int hashtable_remove(uint32_t key);
+
+/**
+ *Tries to remove all values from the hashmap.
+ */
+int hashtable_clear(void);

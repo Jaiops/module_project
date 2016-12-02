@@ -49,3 +49,5 @@ void create_new_proc_entry(void);
 int proc_init (void);
 
 void proc_cleanup(void);
+
+void clear_hashmap(void);
