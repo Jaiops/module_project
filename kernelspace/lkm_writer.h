@@ -16,6 +16,7 @@
 #define GET 0
 #define PUT 1
 #define REMOVE 2
+#define CLEAR 3
 
 struct hashmapEntry {
 	void *data;

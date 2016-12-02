@@ -142,13 +142,19 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 			printk(KERN_WARNING "Ínside removed\n");
 
 			entry = get_entry(mdata->key);
-			if(entry!=NULL)
+			if(entry!=NULL){
 				hash_del(&entry->next);
-			else
+				kfree(entry->data);
+				kfree(entry);
+			} else{
 				return 0; //value not found
-
+			}
 			break;
 
+		case CLEAR:
+			
+
+			break;
 		default:
 
 			//What just happened?
@@ -193,12 +199,12 @@ void proc_cleanup(void)
 	/*Free all entries in the hashtable*/
 	hash_for_each(map, bkt, current_entry, next){
 		printk("key: %d\tbucket: %d\n", 1, bkt);
+		hash_del(&current_entry->next);
 		kfree(current_entry->data);
 		kfree(current_entry);
 	}
 	kfree(msg);
 	printk(KERN_WARNING "proc_cleanup() done!\n");
-
 }
 
 
