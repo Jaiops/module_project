@@ -8,8 +8,9 @@ struct map_data{
 	uint8_t data[0];
 };
 
-uint8_t  * hashtable_get(uint32_t key)
+ssize_t hashtable_get(uint32_t key, void **data)
 {
+	ssize_t valueSize;
 	struct map_data m;
 	m.code = 0;
 	m.key = key;
@@ -17,35 +18,34 @@ uint8_t  * hashtable_get(uint32_t key)
 	int fd = open("/proc/hashmap", O_RDWR);
 	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!" );
-		return NULL;
+		return -1;
 	}
-	ssize_t err;
 	flock(fd, LOCK_EX);
-	err = write(fd, &m, sizeof(struct map_data));
+	valueSize = write(fd, &m, sizeof(struct map_data));
 
-	if(err == -1){
+	if(valueSize == -1){
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
 
 		flock(fd, LOCK_UN);
 		close(fd);
-		return NULL;
+		return -1;
 
-	}else if(err == 0){
+	}else if(valueSize == 0){
 
 		flock(fd, LOCK_UN);
 		close(fd);
-		return NULL;
+		return 0;
 	}
 
-	uint8_t *returnData = calloc(MAX_PAYLOAD_SIZE, 1);
-	err = read(fd, returnData, MAX_PAYLOAD_SIZE);
+	*data = calloc(valueSize, 1);
+	valueSize = read(fd, data, valueSize);
 	flock(fd, LOCK_UN);
-	if (err == -1) {
+	if (valueSize == -1) {
 		perror("read answer");
 	}
 	close(fd);
-	return returnData;
+	return valueSize;
 }
 
 int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize)

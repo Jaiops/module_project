@@ -23,7 +23,7 @@
  *
  * return: pointer to the data, NULL when a element does not exist for the given key.
  */
-uint8_t  * hashtable_get(uint32_t key);
+ssize_t hashtable_get(uint32_t key, void **data);
 
 /**
  * @key 	key for the element to insert.
