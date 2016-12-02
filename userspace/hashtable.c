@@ -125,7 +125,7 @@ int hashtable_clear()
 	struct map_data *m = calloc(1, sizeof(struct map_data));
 	m->code = 3;
 	
-	int fd = open("/proc/hashmap", 0_RDWR);
+	int fd = open("/proc/hashmap", O_RDWR);
 	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!");
 	}
