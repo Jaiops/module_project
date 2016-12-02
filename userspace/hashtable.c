@@ -18,6 +18,7 @@ uint8_t  * hashtable_get(uint32_t key)
 	int fd = open("/proc/hashmap", O_RDWR);
 	if(fd == -1){
 		printf("%s\n","Error, can't open the hashmap file!" );
+		return NULL;
 	}
 	ssize_t err;
 	err = write(fd, &m, sizeof(struct map_data));
@@ -25,6 +26,7 @@ uint8_t  * hashtable_get(uint32_t key)
 	if(err == -1){
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
+		return NULL;
 
 	}else if(err == 0){
 		return NULL;
@@ -43,6 +45,7 @@ int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize)
 {
 	if (dataSize > MAX_PAYLOAD_SIZE) {
 		fprintf(stderr, "Size of data bigger than allowed\n");
+		return -1;
 	}
 
 	struct map_data *m = calloc(1, sizeof(struct map_data) + dataSize);
