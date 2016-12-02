@@ -106,7 +106,7 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 
 	printk(KERN_WARNING "Casted buf to map_data struct\n");
 
-	size_t data_size = count - MAP_DATA_OFFSET;
+	size_t data_size = count - sizeof(struct map_data);
 
 	printk(KERN_WARNING "Declared data_size\n");
 

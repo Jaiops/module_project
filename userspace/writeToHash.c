@@ -9,9 +9,9 @@ void fail(){
 	printf("%s\n","The test suit failed, please remove the module and re-insert to clear possible data!" );
 	exit(1);
 }
-void putval(uint8_t key, uint8_t val){
+void putval(int key, int val){
 	int err; 
-	err = hashtable_put(key,&val,1); 
+	err = hashtable_put(key,&val,sizeof(int)); 
 	if(err == -1){ 
 		printf("%s\n","...hashtable_put failed while putting to the hashtable" );
 		fail(); 
@@ -19,14 +19,18 @@ void putval(uint8_t key, uint8_t val){
 }
 
 //SHOULD ONLY BE USED ON EXISTING VALUES
-uint8_t * getval(uint8_t key){
-	uint8_t *ret;
-	ret = hashtable_get(key);
-	if(ret == NULL){
+uint8_t * getval(int key){
+	uint8_t *val;
+	ssize_t ret;
+	ret = hashtable_get(key,(void** )&val);
+	if(ret == 0){
 		printf("%s\n","...error in getval, value does not exist!" );
 		fail();
+	}else if (ret == -1){
+		printf("%s\n","...error in getval, error code returned from hashtable_get" );
+		fail();
 	}
-	return ret;
+	return val;
 }
 
 void removval(uint8_t key){
@@ -45,9 +49,11 @@ void testPutRemoveOne(){
 }
 
 void testNoObject(uint8_t key){
-	uint8_t *ret;
-	ret = hashtable_get(key);
-	if(ret != NULL){
+	uint8_t *val;
+	ssize_t ret;
+
+	ret = hashtable_get(key,(void** )&val);
+	if(ret != 0){
 		printf("%s\n","...testNoObject failed while getting value from the hashtable" );
 		fail();
 	}
@@ -60,7 +66,6 @@ void testOneObject(){
 	uint8_t * ret;
 	uint8_t key = 1;
 	putval(key,val);
-
 	ret = getval(key);
 
 	if(val != ret[0]){
@@ -211,11 +216,12 @@ void testThreadedGet(int nrThreads){
 	}
 	for (int i = 0; i < nrThreads; ++i)
 	{
-		if((int*)retVal != 0){
-			printf("%s%d%s\n","...testThreadedGet, thread: ",i," failed" );
+		if((int*)retVal[i] != 0){
+			printf("%s%d%s%d\n","...testThreadedGet, thread: ",i," failed: ",*(int*)retVal[i] );
 		}
 	}
 
+	printf("%s\n","...testThreadedGet() successful" );
 
 }
 void * threadWork(void * p){
@@ -224,12 +230,12 @@ void * threadWork(void * p){
 	int end = start+valuesPerThread;
 
 	int *error = malloc(sizeof(int));
-	*error = 0;
-	uint8_t *ret[end-start];
+	error = 0;
+	int *ret[end-start];
 
 	for(int i = start;i<end;i++){
 
-		ret[i-start] = getval(i);
+		ret[i-start] = (int *)getval(i);
 	}
 
 
@@ -243,6 +249,52 @@ void * threadWork(void * p){
 
 
 	return error;
+}
+
+int compareStrings(uint8_t * v1 , uint8_t *v2, ssize_t len){
+
+	for (int i = 0; i < len; ++i)
+	{
+		if (v1[i] != v2[i])
+		{
+			printf("%s%c%s%c\n","...compareStrings v1: ",v1[i], " v2: ", v2[i] );
+			return -1;
+		}
+		
+	}
+	return 0;
+}
+
+void testStringValue(){
+	uint8_t * value = "helloworld";
+	int key = 1;
+	int err; 
+	err = hashtable_put(key,value,10); 
+	if(err == -1){ 
+		printf("%s\n","...hashtable_put failed while putting to the hashtable" );
+		fail(); 
+	}
+
+	uint8_t *val;
+	ssize_t ret;
+	ret = hashtable_get(key,(void** )&val);
+	if(ret == 0){
+		printf("%s\n","...error in testStringValue, value does not exist!" );
+		fail();
+	}else if (ret == -1){
+		printf("%s\n","...error in testStringValue, error code returned from hashtable_get" );
+		fail();
+	}
+
+	if(compareStrings(value,val,ret) == -1){
+		printf("%s\n","...compareStrings returned not equal" );
+		fail();
+	}
+
+
+	printf("%s\n","...testStringValue() successful" );
+
+
 }
 
 int main() {
@@ -271,10 +323,15 @@ int main() {
 
 	testOverwriteValue();
 
+	printf("\n%s\n","TESTING testStringValue:" );
+
+	testStringValue();
+
 	int threads = 4;
 	printf("\n%s%d%s\n","TESTING testThreadedGet with ",threads, " threads:" );
 
 	testThreadedGet(4);
+
 
 
 	printf("\n%s\n","TESTING DONE!" );

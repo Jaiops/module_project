@@ -39,7 +39,7 @@ ssize_t hashtable_get(uint32_t key, void **data)
 	}
 
 	*data = calloc(valueSize, 1);
-	valueSize = read(fd, data, valueSize);
+	valueSize = read(fd, *data, valueSize);
 	flock(fd, LOCK_UN);
 	if (valueSize == -1) {
 		perror("read answer");
@@ -48,7 +48,7 @@ ssize_t hashtable_get(uint32_t key, void **data)
 	return valueSize;
 }
 
-int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize)
+int hashtable_put(uint32_t key, void *value, size_t dataSize)
 {
 	if (dataSize > MAX_PAYLOAD_SIZE) {
 		fprintf(stderr, "Size of data bigger than allowed\n");

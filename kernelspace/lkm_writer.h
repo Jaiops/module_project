@@ -8,7 +8,6 @@
 #include <linux/slab.h>
 
 // number of bytes in the mapdata struct before the data array
-#define MAP_DATA_OFFSET 5
 #define MAX_DATA_LENN 1000
 
 /* Defines what the "code" variable mean regarding which hashmap interface 

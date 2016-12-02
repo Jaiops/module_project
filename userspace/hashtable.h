@@ -34,7 +34,7 @@ ssize_t hashtable_get(uint32_t key, void **data);
  *
  * return 0 on success, else -1.
  */
-int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize);
+int hashtable_put(uint32_t key, void * value, size_t dataSize);
 
 /** 
  * @key key for the element to remove
