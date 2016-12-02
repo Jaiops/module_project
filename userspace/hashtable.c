@@ -21,6 +21,7 @@ uint8_t  * hashtable_get(uint32_t key)
 		return NULL;
 	}
 	ssize_t err;
+	flock(fd, LOCK_EX);
 	err = write(fd, &m, sizeof(struct map_data));
 
 	if(err == -1){
@@ -34,6 +35,7 @@ uint8_t  * hashtable_get(uint32_t key)
 
 	uint8_t *returnData = calloc(MAX_PAYLOAD_SIZE, 1);
 	err = read(fd, returnData, MAX_PAYLOAD_SIZE);
+	flock(fd, LOCK_UN);
 	if (err == -1) {
 		perror("read answer");
 	}
@@ -59,7 +61,9 @@ int hashtable_put(uint32_t key, uint8_t * value, size_t dataSize)
 		return -1;
 	}
 	ssize_t err;
+	flock(fd, LOCK_EX);
 	err = write(fd, m, sizeof(struct map_data) + dataSize);
+	flock(fd, LOCK_UN);
 	if(err == -1){
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
@@ -80,7 +84,9 @@ int hashtable_remove(uint32_t key)
 		return -1;
 	}
 	ssize_t err;
+	flock(fd, LOCK_EX);
 	err = write(fd, m, sizeof(struct map_data));
+	flock(fd, LOCK_UN);
 	if(err == -1){
 		perror("write request");
 		printf("%s\n","Error when writing to hashmap file!" );
