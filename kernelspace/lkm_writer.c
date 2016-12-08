@@ -89,7 +89,7 @@ void put(struct map_data *mdata, size_t data_size)
 
 	entry = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
 	entry->data = entryData;
-	printk(KERN_WARNING "Value in put is %d\n",*(uint8_t *)entry->data );
+	printk(KERN_WARNING "Value in put is %d\n",*(uint32_t *)entry->data );
 	entry->data_size = data_size;
 	entry->key = mdata->key;
 	hash_add(map, &entry->next, mdata->key);
@@ -214,11 +214,64 @@ void proc_cleanup(void)
 	printk(KERN_WARNING "Inside proc_cleanup()\n");
 	remove_proc_entry("hashmap",NULL);
 
+	saveToFile();
 	/*Free all entries in the hashtable*/
 	clear_hashmap();
 	kfree(msg);
 	printk(KERN_WARNING "proc_cleanup() done!\n");
 }
+
+void saveToFile(void)
+{
+	char* dump_filename; //Set to the file you are targeting
+	struct file *file;
+	int i;
+	void* data;  //Needs to be a kernel pointer, not userspace pointer
+	int block_count; //Set me to something
+	int block_size; //Set me to something
+	loff_t pos = 0;
+	mm_segment_t old_fs;
+
+	old_fs = get_fs();  //Save the current FS segment
+	set_fs(get_ds());
+
+	dump_filename = "/home/erik/hello.txt";
+	block_count = 1;
+	block_size = 9;
+
+
+	struct hashmapEntry* current_entry;
+	int bkt;
+
+	file = filp_open(dump_filename, O_WRONLY|O_CREAT, 0644);
+
+	if(file){
+		hash_for_each(map, bkt, current_entry, next){
+			block_size = 4 + 1 + current_entry->data_size + 1;
+			char *str = kmalloc(block_size, GFP_KERNEL);
+			*(uint32_t*)str = current_entry->key;
+			str[4] = ':'; 
+			for (i = 5; i < block_size; i++) {
+				str[i] = ((char*)(current_entry->data))[i-5];
+				printk("%X", ((uint8_t*)(current_entry->data))[i-5]);
+			}
+			printk("\n");
+			str[block_size-1] = '\n';
+			data = str;
+
+			vfs_write(file, data, block_size, &pos);
+			pos = pos+block_size;
+			kfree(str);
+
+		}
+		filp_close(file,NULL);
+	}
+	set_fs(old_fs); //Reset to save FS
+	//kfree(dump_filename);
+
+}
+
+
 
 
 MODULE_LICENSE("GPL"); 
