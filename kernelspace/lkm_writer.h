@@ -56,3 +56,5 @@ void proc_cleanup(void);
 void clear_hashmap(void);
 
 void saveToFile(void);
+
+void loadFromFile(void);

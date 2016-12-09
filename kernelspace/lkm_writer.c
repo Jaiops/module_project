@@ -200,6 +200,7 @@ void create_new_proc_entry(void)
  */
 int proc_init (void) 
 {
+	loadFromFile();
 	create_new_proc_entry();
 	hash_init(map);
 	return 0;
@@ -229,7 +230,7 @@ void saveToFile(void)
 	void* data;  //Needs to be a kernel pointer, not userspace pointer
 	int block_count; //Set me to something
 	int block_size; //Set me to something
-	loff_t pos = 0;
+	loff_t fileoffset = 0;
 	mm_segment_t old_fs;
 
 	old_fs = get_fs();  //Save the current FS segment
@@ -261,8 +262,8 @@ void saveToFile(void)
 			str[block_size-1] = '\n';
 			data = str;
 
-			vfs_write(file, data, block_size, &pos);
-			pos = pos+block_size;
+			vfs_write(file, data, block_size, &fileoffset);
+			fileoffset = fileoffset+block_size;
 			kfree(str);
 
 		}
@@ -280,7 +281,7 @@ void loadFromFile(void)
 	int err;
 	void* data;  //Needs to be a kernel pointer, not userspace pointer
 	int block_size; //Set me to something
-	loff_t pos = 0;
+	loff_t fileoffset = 0;
 	mm_segment_t old_fs;
 
 	old_fs = get_fs();  //Save the current FS segment
@@ -307,15 +308,23 @@ void loadFromFile(void)
 		kern_path(dump_filename, 0, &p);
 		vfs_getattr(&p, &ks);
 
-		while(pos < ks.size){
+		while(fileoffset < ks.size){
 			struct hashmapEntry* entry  = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
-			vfs_read(file, data, block_size, &pos);
+			if (fileoffset + block_size >= ks.size) {
+				printk(KERN_WARNING "block_size error, readsize larger than file size!\n");
+				break;
+			}
+			vfs_read(file, data, block_size, &fileoffset);
 			entry->key = *(uint32_t*)data;
 			entry->data_size = *(size_t*)(data+sizeof(uint32_t)+1);
 			entry->data = kmalloc(entry->data_size, GFP_KERNEL);
-			pos = pos + block_size;
-			vfs_read(file, entry->data, entry->data_size, &pos);
-			pos += (entry->data_size + 1); //add one here for the \n
+			fileoffset = fileoffset + block_size;
+			if (fileoffset + entry->data_size >= ks.size) {
+				printk(KERN_WARNING "entry-data error, readsize larger than file size!\n");
+				break;
+			}
+			vfs_read(file, entry->data, entry->data_size, &fileoffset);
+			fileoffset += (entry->data_size); //add one here for the \n
 			hash_add(map, &entry->next, entry->key);
 		}
 
@@ -324,6 +333,7 @@ void loadFromFile(void)
 	set_fs(old_fs); //Reset to save FS
 
 }
+
 MODULE_LICENSE("GPL"); 
 module_init(proc_init);
 module_exit(proc_cleanup);
