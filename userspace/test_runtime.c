@@ -1,46 +1,8 @@
-#include "hashtable.h"
 #include <linux/types.h>
 #include <pthread.h>
-//#define NULL ((void *)0)
+#include "test_util.h"
+
 void * threadWork(void * p);
-
-
-void fail(){
-	printf("%s\n","The test suit failed, please remove the module and re-insert to clear possible data!" );
-	exit(1);
-}
-void putval(int key, int val){
-	int err; 
-	err = hashtable_put(key,&val,sizeof(int)); 
-	if(err == -1){ 
-		printf("%s\n","...hashtable_put failed while putting to the hashtable" );
-		fail(); 
-	} 
-}
-
-//SHOULD ONLY BE USED ON EXISTING VALUES
-uint8_t * getval(int key){
-	uint8_t *val;
-	ssize_t ret;
-	ret = hashtable_get(key,(void** )&val);
-	if(ret == 0){
-		printf("%s\n","...error in getval, value does not exist!" );
-		fail();
-	}else if (ret == -1){
-		printf("%s\n","...error in getval, error code returned from hashtable_get" );
-		fail();
-	}
-	return val;
-}
-
-void removval(uint8_t key){
-	int err;
-	err = hashtable_remove(key);
-	if(err == -1){
-		printf("%s\n","...hashtable_remove failed while removing from the hashtable" );
-		fail();
-	}
-}
 
 void testPutRemoveOne(){
 	putval(1,5);
@@ -111,23 +73,23 @@ void testTwoObjects(){
 
 void testSeveralGetCalls(){
 	int count = 10;
-	for (int i = 0; i < count; ++i)
-	{
+	for (int i = 0; i < count; ++i){
+
 		putval(i+1, i+2);
 	}
 
 	uint8_t * ret;
 
-	for (int i = 0; i < count; ++i)
-	{
+	for (int i = 0; i < count; ++i){
+
 		ret = getval(i+1);
 		if(ret[0] != i+2){
 			printf("%s %d %s %d\n","...testSeveralGetCalls failed. Was",ret[0],"expected",i+2 );
 			fail();
 		}
 	}
-	for (int i = 0; i < count; ++i)
-	{
+	for (int i = 0; i < count; ++i){
+		
 		removval(i+1);
 	}
 	printf("%s\n","..testSeveralGetCalls successful!" );
@@ -187,13 +149,13 @@ void testThreadedGet(int nrThreads){
 	pthread_t threads[nrThreads];
 	int count = valuesPerThread*nrThreads;
 	void *retVal[nrThreads];
-	for (int i = 0; i < count; ++i)
-	{
+	for (int i = 0; i < count; ++i){
+
 		putval(i,i);
 
 	}
-	for (int i = 0; i < nrThreads; ++i)
-	{
+	for (int i = 0; i < nrThreads; ++i){
+
 		int * j = malloc(sizeof(*j));
 		*j = (i*valuesPerThread);	
 		if(pthread_create(&threads[i],0,threadWork,(void *)j)){
@@ -201,21 +163,20 @@ void testThreadedGet(int nrThreads){
 		}
 	}
 
-	for (int i = 0; i < nrThreads; ++i)
-	{
+	for (int i = 0; i < nrThreads; ++i){
 		
 		if(pthread_join(threads[i], &retVal[i] )){
 			perror("...Thread join failure");
 		}
 	}
 
-	for (int i = 0; i < count; ++i)
-	{
+	for (int i = 0; i < count; ++i){
+
 		removval(i);
 
 	}
-	for (int i = 0; i < nrThreads; ++i)
-	{
+	for (int i = 0; i < nrThreads; ++i){
+
 		if((int*)retVal[i] != 0){
 			printf("%s%d%s%d\n","...testThreadedGet, thread: ",i," failed: ",*(int*)retVal[i] );
 		}
@@ -249,20 +210,6 @@ void * threadWork(void * p){
 
 
 	return error;
-}
-
-int compareStrings(uint8_t * v1 , uint8_t *v2, ssize_t len){
-
-	for (int i = 0; i < len; ++i)
-	{
-		if (v1[i] != v2[i])
-		{
-			printf("%s%c%s%c\n","...compareStrings v1: ",v1[i], " v2: ", v2[i] );
-			return -1;
-		}
-		
-	}
-	return 0;
 }
 
 void testStringValue(){

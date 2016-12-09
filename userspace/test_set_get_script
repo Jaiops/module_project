@@ -1,0 +1,6 @@
+#!/bin/bash
+sudo insmod ../kernelspace/lkm_writer.ko
+./test_set
+sudo rmmod lkm_writer
+sudo insmod ../kernelspace/lkm_writer.ko
+./test_get
