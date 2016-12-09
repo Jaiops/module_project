@@ -200,6 +200,7 @@ void create_new_proc_entry(void)
  */
 int proc_init (void) 
 {
+	loadFromFile();
 	create_new_proc_entry();
 	hash_init(map);
 	return 0;
@@ -229,7 +230,7 @@ void saveToFile(void)
 	void* data;  //Needs to be a kernel pointer, not userspace pointer
 	int block_count; //Set me to something
 	int block_size; //Set me to something
-	loff_t pos = 0;
+	loff_t fileoffset = 0;
 	mm_segment_t old_fs;
 
 	old_fs = get_fs();  //Save the current FS segment
@@ -247,20 +248,22 @@ void saveToFile(void)
 
 	if(file){
 		hash_for_each(map, bkt, current_entry, next){
-			block_size = 4 + 1 + current_entry->data_size + 1;
+			block_size = 4 + 1 + 4 + 1 + current_entry->data_size + 1; //borde vara 1 mindre och inte avslutas med \n
 			char *str = kmalloc(block_size, GFP_KERNEL);
 			*(uint32_t*)str = current_entry->key;
-			str[4] = ':'; 
-			for (i = 5; i < block_size; i++) {
+			str[4] = ':';
+			*(size_t*)(str+5) = current_entry->data_size;
+			str[9] = ':';
+			for (i = 10; i < block_size; i++) {
 				str[i] = ((char*)(current_entry->data))[i-5];
-				printk("%X", ((uint8_t*)(current_entry->data))[i-5]);
+				printk("%X ", ((uint8_t*)(current_entry->data))[i-5]);
 			}
 			printk("\n");
 			str[block_size-1] = '\n';
 			data = str;
 
-			vfs_write(file, data, block_size, &pos);
-			pos = pos+block_size;
+			vfs_write(file, data, block_size, &fileoffset);
+			fileoffset = fileoffset+block_size;
 			kfree(str);
 
 		}
@@ -271,8 +274,65 @@ void saveToFile(void)
 
 }
 
+void loadFromFile(void)
+{
+	char* dump_filename; //Set to the file you are targeting
+	struct file *file;
+	int err;
+	void* data;  //Needs to be a kernel pointer, not userspace pointer
+	int block_size; //Set me to something
+	loff_t fileoffset = 0;
+	mm_segment_t old_fs;
 
+	old_fs = get_fs();  //Save the current FS segment
+	set_fs(get_ds());
 
+	dump_filename = "/home/erik/hello.txt";
+
+	file = filp_open(dump_filename, O_RDONLY, 0644);
+
+	if(IS_ERR(file)) {
+		err = PTR_ERR(file);
+		if (err == ENOENT)
+			printk(KERN_WARNING"File does not exist, start with empty table\n");
+		else
+			printk(KERN_WARNING"Error on opening file, start with empty table\n");
+		return;
+	}
+
+	block_size = FILE_METADATA_OFFSET;
+	data = kmalloc(block_size, GFP_KERNEL);
+	if(file){
+		struct path p;
+		struct kstat ks;
+		kern_path(dump_filename, 0, &p);
+		vfs_getattr(&p, &ks);
+
+		while(fileoffset < ks.size){
+			struct hashmapEntry* entry  = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
+			if (fileoffset + block_size >= ks.size) {
+				printk(KERN_WARNING "block_size error, readsize larger than file size!\n");
+				break;
+			}
+			vfs_read(file, data, block_size, &fileoffset);
+			entry->key = *(uint32_t*)data;
+			entry->data_size = *(size_t*)(data+sizeof(uint32_t)+1);
+			entry->data = kmalloc(entry->data_size, GFP_KERNEL);
+			fileoffset = fileoffset + block_size;
+			if (fileoffset + entry->data_size >= ks.size) {
+				printk(KERN_WARNING "entry-data error, readsize larger than file size!\n");
+				break;
+			}
+			vfs_read(file, entry->data, entry->data_size, &fileoffset);
+			fileoffset += (entry->data_size); //add one here for the \n
+			hash_add(map, &entry->next, entry->key);
+		}
+
+		filp_close(file,NULL);
+	}
+	set_fs(old_fs); //Reset to save FS
+
+}
 
 MODULE_LICENSE("GPL"); 
 module_init(proc_init);
