@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sudo rmmod lkm_writer
+cd ..
+make
+cd userspace
+

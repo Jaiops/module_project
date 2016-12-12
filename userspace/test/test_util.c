@@ -19,6 +19,7 @@ uint8_t * getval(int key){
 	uint8_t *val;
 	ssize_t ret;
 	ret = hashtable_get(key,(void** )&val);
+	printf("key: %d\n", key);
 	if(ret == 0){
 		printf("%s\n","...error in getval, value does not exist!" );
 		fail();

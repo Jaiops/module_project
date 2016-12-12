@@ -6,3 +6,5 @@ modules.order
 *.mod.*
 *.out
 testsuit
+test_set
+test_get

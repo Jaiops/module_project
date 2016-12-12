@@ -1,4 +1,5 @@
 #!/bin/bash
+rm -f ~/hello.txt
 sudo insmod ../kernelspace/lkm_writer.ko
 ./test_set
 sudo rmmod lkm_writer

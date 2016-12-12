@@ -62,8 +62,6 @@ int get(struct map_data *mdata)
 {
 	struct hashmapEntry *entry = get_entry(mdata->key);
 	if(entry!=NULL){
-		printk(KERN_WARNING "entry != null\n");
-
 		output = (char*)(entry->data);
 		len = entry->data_size;
 		printk("output is :%d\n",*(uint8_t *)entry->data );
@@ -106,15 +104,9 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	copy_from_user(msg,buf,count);
 	struct map_data *mdata = (struct map_data*)msg;
 
-	printk(KERN_WARNING "Casted buf to map_data struct\n");
-
 	size_t data_size = count - sizeof(struct map_data);
 
-	printk(KERN_WARNING "Declared data_size\n");
-
 	struct hashmapEntry *entry = NULL;
-
-	printk(KERN_WARNING "Declared tmp, entry and current_entry\n");
 
 	printk(KERN_WARNING "code: %u\n", mdata->code);
 	switch ( mdata->code ) 
@@ -200,9 +192,9 @@ void create_new_proc_entry(void)
  */
 int proc_init (void) 
 {
+	hash_init(map);
 	loadFromFile();
 	create_new_proc_entry();
-	hash_init(map);
 	return 0;
 }
 
@@ -248,22 +240,22 @@ void saveToFile(void)
 
 	if(file){
 		hash_for_each(map, bkt, current_entry, next){
-			block_size = 4 + 1 + 4 + 1 + current_entry->data_size + 1; //borde vara 1 mindre och inte avslutas med \n
+			block_size = FILE_METADATA_OFFSET + current_entry->data_size;
 			char *str = kmalloc(block_size, GFP_KERNEL);
 			*(uint32_t*)str = current_entry->key;
 			str[4] = ':';
 			*(size_t*)(str+5) = current_entry->data_size;
-			str[9] = ':';
-			for (i = 10; i < block_size; i++) {
-				str[i] = ((char*)(current_entry->data))[i-5];
-				printk("%X ", ((uint8_t*)(current_entry->data))[i-5]);
+			printk(KERN_WARNING "size: %lu\n", current_entry->data_size);
+			str[FILE_METADATA_OFFSET-1] = ':';
+			for (i = 0; i < current_entry->data_size; i++) {
+				str[FILE_METADATA_OFFSET + i] = ((uint8_t*)(current_entry->data))[i];
 			}
+			printk("value = %u", *(uint32_t*)(str+14));
 			printk("\n");
-			str[block_size-1] = '\n';
 			data = str;
 
 			vfs_write(file, data, block_size, &fileoffset);
-			fileoffset = fileoffset+block_size;
+			//fileoffset = fileoffset+block_size;
 			kfree(str);
 
 		}
@@ -309,22 +301,23 @@ void loadFromFile(void)
 		vfs_getattr(&p, &ks);
 
 		while(fileoffset < ks.size){
+			printk(KERN_WARNING "offset: %lld, size: %lld\n", fileoffset, ks.size);
 			struct hashmapEntry* entry  = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
-			if (fileoffset + block_size >= ks.size) {
+			if (fileoffset + block_size > ks.size) {
 				printk(KERN_WARNING "block_size error, readsize larger than file size!\n");
 				break;
 			}
 			vfs_read(file, data, block_size, &fileoffset);
 			entry->key = *(uint32_t*)data;
-			entry->data_size = *(size_t*)(data+sizeof(uint32_t)+1);
+			entry->data_size = *(size_t*)(data+sizeof(uint32_t)+1); //add one to skip the :
 			entry->data = kmalloc(entry->data_size, GFP_KERNEL);
-			fileoffset = fileoffset + block_size;
-			if (fileoffset + entry->data_size >= ks.size) {
+			printk(KERN_WARNING "offset: %lld, size: %lld, data_size: %lu\n", fileoffset, ks.size, entry->data_size);
+			if (fileoffset + entry->data_size > ks.size) {
 				printk(KERN_WARNING "entry-data error, readsize larger than file size!\n");
 				break;
 			}
 			vfs_read(file, entry->data, entry->data_size, &fileoffset);
-			fileoffset += (entry->data_size); //add one here for the \n
+			printk("read from file. Key: %d, Data: %u\n", entry->key, *(int*)entry->data);
 			hash_add(map, &entry->next, entry->key);
 		}
 

@@ -10,7 +10,7 @@
 
 // number of bytes in the mapdata struct before the data array
 #define MAX_DATA_LENN 1000
-#define FILE_METADATA_OFFSET 10;
+#define FILE_METADATA_OFFSET 14
 
 
 /* Defines what the "code" variable mean regarding which hashmap interface 
