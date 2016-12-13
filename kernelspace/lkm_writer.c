@@ -104,7 +104,7 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	copy_from_user(msg,buf,count);
 	struct map_data *mdata = (struct map_data*)msg;
 
-	size_t data_size = count - sizeof(struct map_data);
+	ssize_t data_size = count - sizeof(struct map_data);
 
 	struct hashmapEntry *entry = NULL;
 
@@ -148,6 +148,13 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 		case CLEAR:
 			clear_hashmap();	
 
+			break;
+		case SAVE:
+			output = create_save_array(hash_size()); 
+			break;
+
+		case LOAD:
+			parse_input_data(mdata->data, data_size);
 			break;
 		default:
 
@@ -325,6 +332,84 @@ void loadFromFile(void)
 	}
 	set_fs(old_fs); //Reset to save FS
 
+}
+
+size_t hash_size(void)
+{
+	int bkt;
+	struct hashmapEntry *current_entry;
+	ssize_t size = 0;
+
+	hash_for_each(map, bkt, current_entry, next){
+		size += (FILE_METADATA_OFFSET + current_entry->data_size);
+	}
+	return size;
+}
+
+void *create_save_array(size_t array_size)
+{
+	int bkt;
+	int i;
+	struct hashmapEntry *current_entry;
+	ssize_t offset = 0;
+	uint8_t *array = kmalloc(array_size, GFP_KERNEL);
+
+	hash_for_each(map, bkt, current_entry, next){
+		//block_size = FILE_METADATA_OFFSET + current_entry->data_size;
+		*(uint32_t*)(array+offset) = current_entry->key;
+		offset += sizeof(current_entry->key);
+		array[offset] = ':';
+		offset++;
+		*(size_t*)(array+offset) = current_entry->data_size;
+		offset += sizeof(current_entry->data_size);
+
+		printk(KERN_WARNING "size: %lu\n", current_entry->data_size);
+		array[offset] = ':';
+		offset++;
+
+		for (i = 0; i < current_entry->data_size; i++, offset++) {
+			array[offset] = ((uint8_t*)(current_entry->data))[i];
+		}
+		printk("value = %u", *(uint32_t*)(array+(offset-current_entry->data_size)));
+		printk("\n");
+
+	}
+
+	return array;
+}
+
+void parse_input_data(void* array, size_t size)
+{
+	int i;
+	size_t offset = 0;
+
+	while(offset < size){
+		printk(KERN_WARNING "offset: %lu\n", offset);
+		struct hashmapEntry* entry  = kmalloc(sizeof(struct hashmapEntry), GFP_KERNEL);
+		if (offset + FILE_METADATA_OFFSET > size) {
+			printk(KERN_WARNING "block_size error, readsize larger than array size!\n");
+			break;
+		}
+		//(file, data, block_size, offset);
+		entry->key = *(uint32_t*)(array+offset);
+		offset += sizeof(uint32_t) + 1; //add one to skip the :
+
+		entry->data_size = *(size_t*)(array+offset); 
+		offset += sizeof(size_t) + 1; //add one to skip the :
+
+		printk(KERN_WARNING "offset: %lu, data_size: %lu\n", offset, entry->data_size);
+		if (offset + entry->data_size > size) {
+			printk(KERN_WARNING "entry-data error, readsize larger than array size!\n");
+			break;
+		}
+
+		entry->data = kmalloc(entry->data_size, GFP_KERNEL);
+		for (i = 0; i < entry->data_size; i++, offset++) {
+			((uint8_t*)entry->data)[i] = ((uint8_t*)array)[offset];
+		}	
+		printk("read from file. Key: %d, Data: %u\n", entry->key, *(int*)entry->data);
+		hash_add(map, &entry->next, entry->key);
+	}
 }
 
 MODULE_LICENSE("GPL"); 

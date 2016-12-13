@@ -19,7 +19,8 @@
 #define PUT 1
 #define REMOVE 2
 #define CLEAR 3
-
+#define SAVE 4
+#define LOAD 5
 struct hashmapEntry {
 	void *data;
 	uint32_t key;
@@ -58,3 +59,9 @@ void clear_hashmap(void);
 void saveToFile(void);
 
 void loadFromFile(void);
+
+size_t hash_size(void);
+
+void *create_save_array(size_t array_size);
+
+void parse_input_data(void* array, size_t size);
