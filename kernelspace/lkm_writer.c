@@ -150,11 +150,15 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 
 			break;
 		case SAVE:
+			printk("Inside switch SAVE\n");
+			len = hash_size();
+			temp = len;
 			output = create_save_array(hash_size()); 
 			break;
 
 		case LOAD:
-			parse_input_data(mdata->data, data_size);
+			printk("Inside switch LOAD\n");
+			//parse_input_data(mdata->data, data_size);
 			break;
 		default:
 
@@ -200,7 +204,7 @@ void create_new_proc_entry(void)
 int proc_init (void) 
 {
 	hash_init(map);
-	loadFromFile();
+	//loadFromFile();
 	create_new_proc_entry();
 	return 0;
 }
@@ -214,7 +218,7 @@ void proc_cleanup(void)
 	printk(KERN_WARNING "Inside proc_cleanup()\n");
 	remove_proc_entry("hashmap",NULL);
 
-	saveToFile();
+	//saveToFile();
 	/*Free all entries in the hashtable*/
 	clear_hashmap();
 	kfree(msg);
