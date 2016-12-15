@@ -105,10 +105,15 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 	struct map_data *mdata = (struct map_data*)msg;
 
 	ssize_t data_size = count - sizeof(struct map_data);
+	int i;
+	for ( i = 0; i < count; ++i)
+	{
+		printk(KERN_WARNING "%d>>%d",i,msg[i]);
+	}
 
 	struct hashmapEntry *entry = NULL;
 
-	printk(KERN_WARNING "code: %u\n", mdata->code);
+	printk(KERN_WARNING "OP code: %u\n", mdata->code);
 	switch ( mdata->code ) 
 	{
 		case GET:
@@ -151,14 +156,15 @@ ssize_t write_proc(struct file *filp,const char *buf,size_t count,loff_t *offp)
 			break;
 		case SAVE:
 			printk("Inside switch SAVE\n");
-			len = hash_size();
+			len = hash_size()+2+sizeof(uint32_t);
 			temp = len;
 			output = create_save_array(hash_size()); 
+			printk(KERN_WARNING "Output op %d size %d %d %d %d\n",output[0],output[1],output[2],output[3],output[4]);
 			break;
 
 		case LOAD:
 			printk("Inside switch LOAD\n");
-			//parse_input_data(mdata->data, data_size);
+			parse_input_data(msg, count);
 			break;
 		default:
 
@@ -342,7 +348,7 @@ size_t hash_size(void)
 {
 	int bkt;
 	struct hashmapEntry *current_entry;
-	ssize_t size = 0;
+	size_t size = 0;
 
 	hash_for_each(map, bkt, current_entry, next){
 		size += (FILE_METADATA_OFFSET + current_entry->data_size);
@@ -352,11 +358,18 @@ size_t hash_size(void)
 
 void *create_save_array(size_t array_size)
 {
+	ssize_t filesize = array_size + 2 + sizeof(size_t);
 	int bkt;
 	int i;
 	struct hashmapEntry *current_entry;
 	ssize_t offset = 0;
-	uint8_t *array = kmalloc(array_size, GFP_KERNEL);
+	uint8_t *array = kmalloc(filesize, GFP_KERNEL);
+	array[offset] = 5;
+	offset++;
+	*(uint32_t*)(array+offset) = 0;//array_size+1+sizeof(size_t);
+	offset += sizeof(uint32_t);
+	array[offset] = '&';
+	offset++;
 
 	hash_for_each(map, bkt, current_entry, next){
 		//block_size = FILE_METADATA_OFFSET + current_entry->data_size;
@@ -368,6 +381,10 @@ void *create_save_array(size_t array_size)
 		offset += sizeof(current_entry->data_size);
 
 		printk(KERN_WARNING "size: %lu\n", current_entry->data_size);
+		printk(KERN_WARNING "sizeof: %lu\n", sizeof(current_entry->data_size));
+		printk(KERN_WARNING "sizeoftype: %lu\n", sizeof(size_t));
+
+		
 		array[offset] = ':';
 		offset++;
 
@@ -385,7 +402,7 @@ void *create_save_array(size_t array_size)
 void parse_input_data(void* array, size_t size)
 {
 	int i;
-	size_t offset = 0;
+	size_t offset = 2+ sizeof(uint32_t);
 
 	while(offset < size){
 		printk(KERN_WARNING "offset: %lu\n", offset);
@@ -395,13 +412,21 @@ void parse_input_data(void* array, size_t size)
 			break;
 		}
 		//(file, data, block_size, offset);
+		printk(KERN_WARNING "Getting key:\n");
 		entry->key = *(uint32_t*)(array+offset);
-		offset += sizeof(uint32_t) + 1; //add one to skip the :
+		offset += sizeof(uint32_t)+1; //add one to skip the :
+		printk(KERN_WARNING "Key: %u\n",entry->key);
+		printk(KERN_WARNING "Current offset: %lu\n", offset);
 
 		entry->data_size = *(size_t*)(array+offset); 
-		offset += sizeof(size_t) + 1; //add one to skip the :
+		//size_t testSizeVar2 = *(size_t*)(array+offset); 
 
-		printk(KERN_WARNING "offset: %lu, data_size: %lu\n", offset, entry->data_size);
+
+		offset += sizeof(size_t) + 1; //add one to skip the :
+		printk(KERN_WARNING "data_sizee: %lu\n",entry->data_size);
+		printk(KERN_WARNING "offset: %lu\n",offset);
+
+		//printk(KERN_WARNING "offset: %lu, data_size: %lu\n", offset, entry->data_size);
 		if (offset + entry->data_size > size) {
 			printk(KERN_WARNING "entry-data error, readsize larger than array size!\n");
 			break;

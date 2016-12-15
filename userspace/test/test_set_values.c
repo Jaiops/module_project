@@ -5,7 +5,7 @@ int main(){
 
 	printf("\n%s\n","INSERTING OBJECTS:" );
 	for (int i = 0; i < 10; ++i){
-	
+		printf("inserting on key %d\n",i);
 		putval(i,i+2);
 	}
 
