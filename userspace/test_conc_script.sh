@@ -1,10 +1,8 @@
 #!/bin/bash
 SIZE=100
 
-sudo insmod ../kernelspace/lkm_writer.ko
 for i in `seq 1 5`;
     do
             ./test_conc $i*$SIZE $SIZE $i& 
     done 
 
-#sudo rmmod lkm_writer

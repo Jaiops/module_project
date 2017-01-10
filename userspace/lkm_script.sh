@@ -9,9 +9,8 @@ if [ $1 = "save" ]; then
 	#copy the data to a specified file
 	cat $COMFILE > $2
 elif [ $1 = "load" ]; then
-	 cat $2 >> $COMFILE
+	#Send a saved file to the lkm	
+	cat $2 >> $COMFILE
 else
-
 	echo "Unknown commando usage"
-
 fi
